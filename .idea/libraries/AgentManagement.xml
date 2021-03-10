@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="AgentManagement">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/coin-agent-management/dist/AgentManagement.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="stop">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/coin-agent-management/stop.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
