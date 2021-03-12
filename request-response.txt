@@ -44,9 +44,33 @@ success response:
     ]
 }
 
+request url: http://127.0.0.1:9090/api/agent/changepassword
+Method: POST
 ResetPassword:
 {
     "email":"pr@yopmail.com",
     "password":"abcdef",
     "newPassword":"123456"
+}
+
+request url: http://127.0.0.1:9090/api/agent/registration
+Method: POST
+{
+"email":"ishtiaquerabbi@gmail.com",
+"password":"asdf",    
+"parentId":"1",
+"name":"Ishtiaque",
+"phone":"0155555555",
+"address":"Chittagong",
+"pin":"1234",
+"type": "1",
+"ringId":"0"
+}
+
+request url: http://127.0.0.1:9090/api/agent/verification
+Method: POST
+Request:
+{
+"email":"ishtiaquerabbi@gmail.com",
+"password":"asdf"
 }

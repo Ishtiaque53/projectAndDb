@@ -220,7 +220,39 @@ public class AgentDAO {
         }
         return agentDTO;
     }
-    
+
+    public boolean insertAgentInfo(int parentId, String regEmailId, String name, String regPassword,
+            String mobileNo, String address, String pin, int type, String verificationToken, Long ringId, int coinCommission, int goldCommission) throws Exception {
+        DBConnection db = null;
+        PreparedStatement stmt = null;
+        Savepoint transactionBegin = null;
+        ResultSet rs = null;
+        boolean output = false;
+
+        Timestamp createdTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+        String insertQuery = "INSERT INTO agentregistrationlog (parentId, userId, name, password, mobileNo, "
+                + "pin, address, type, verificationToken, created, ringId, coinCommission, "
+                + "goldCommission) VALUES ('" + parentId + "', '" + regEmailId + "', '" + name + "', '" + regPassword + "', '" + mobileNo + "', '" + pin + "', '" + address + "',"
+                + " '" + type + "', '" + verificationToken + "', '" + createdTime + "', '" + ringId + "', '" + coinCommission + "', '" + goldCommission + "')";
+
+        try {
+            db = DBConnector.getInstance().makeReadConnection();
+            db.connection.setAutoCommit(false);
+
+            transactionBegin = db.connection.setSavepoint("TransactionBegin");
+            stmt = db.connection.prepareStatement(insertQuery);
+            stmt.executeUpdate();
+            db.connection.commit();
+            output = true;
+        } catch (Exception e) {
+            rollBackDBTransaction(db, transactionBegin);
+            throw e;
+        } finally {
+            closeDBWriteConnection(rs, stmt, db);
+        }
+        return output;
+    }
+
     public List<AgentAccountDTO> getAgentWalletStatus(int agentId) throws Exception {
 
         DBConnection db = null;
@@ -275,8 +307,8 @@ public class AgentDAO {
             }
         }
     }
-    
-     private void closeDBWriteConnection(ResultSet rs, PreparedStatement stmt, DBConnection db) {
+
+    private void closeDBWriteConnection(ResultSet rs, PreparedStatement stmt, DBConnection db) {
         if (stmt != null) {
             try {
                 if (rs != null) {
@@ -319,14 +351,14 @@ public class AgentDAO {
             LOG.error("Exception with db connection", e);
         }
     }
-    
-    public void resetPassword(int agentId, String password) throws Exception{
+
+    public void resetPassword(int agentId, String password) throws Exception {
         DBConnection db = null;
         PreparedStatement stmt = null;
         Savepoint transactionBegin = null;
         ResultSet rs = null;
 
-        String insertQuery = "UPDATE agent SET password = '"+password+"' WHERE id = '"+agentId+"'";
+        String insertQuery = "UPDATE agent SET password = '" + password + "' WHERE id = '" + agentId + "'";
 
         try {
             db = DBConnector.getInstance().makeWriteConnection();
@@ -345,4 +377,123 @@ public class AgentDAO {
         }
 
     }
+    
+        public void makeVerify(String userId, String verificationToken, boolean verificationStatus) throws Exception {
+        DBConnection db = null;
+        PreparedStatement stmt = null;
+        Savepoint transactionBegin = null;
+        ResultSet rs = null;
+    
+        String selectQuery = "UPDATE agentregistrationlog SET verificationToken = '"+verificationToken+"', verificationStatus = "+verificationStatus+" "
+                + "WHERE userId = '"+userId+"' ";
+        //String selectQuery2 = "SELECT * FROM agent WHERE userId = '"+userId+"' AND password = '"+password+"' ";
+
+        try {
+            db = DBConnector.getInstance().makeReadConnection();
+            db.connection.setAutoCommit(false);
+            
+            transactionBegin = db.connection.setSavepoint("TransactionBegin");
+            //stmt1 = db.connection.prepareStatement(selectQuery1);
+            stmt = db.connection.prepareStatement(selectQuery);
+            stmt.executeUpdate();
+            db.connection.commit();
+        } catch (Exception e){
+            rollBackDBTransaction(db, transactionBegin);
+            throw e;
+        } finally {
+            closeDBWriteConnection(rs,stmt, db);
+        }
+    }
+    
+    
+    public AgentDTO validationProcess(String userId, String password) throws Exception {
+        DBConnection db = null;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        AgentDTO agentDTO = null;
+        String selectQuery = "SELECT * FROM agentregistrationlog WHERE userId = '"+userId+"' AND password = '"+password+"' ";
+        
+        try {
+            db = DBConnector.getInstance().makeReadConnection();
+
+            stmt = db.connection.prepareStatement(selectQuery);
+            //stmt.setString(1, userId);
+            //stmt.setString(2, password);
+            stmt.execute();
+
+            rs = stmt.getResultSet();
+            LOG.info("Check userId: " + userId + " password: " + password);
+            if (rs.next()) {
+                agentDTO = new AgentDTO();
+                agentDTO.setAgentId(rs.getInt("id"));
+                agentDTO.setParentId(rs.getInt("parentId"));
+                agentDTO.setAgentUserId(rs.getString("userId"));
+                agentDTO.setName(rs.getString("name"));
+                agentDTO.setPassword(password);
+                //agentDTO.setActive(rs.getBoolean("active"));
+                //LOG.info("active: " + agentDTO.getActive());
+                agentDTO.setMobileNo(rs.getString("mobileNo"));
+                agentDTO.setAddress(rs.getString("address"));
+                agentDTO.setPin(rs.getString("pin"));
+                agentDTO.setType(rs.getInt("type"));
+                agentDTO.setRingId(rs.getLong("ringId"));
+                agentDTO.setCoinCommission(rs.getInt("coinCommission"));
+                agentDTO.setGoldCommission(rs.getInt("goldCommission"));
+            }
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            closeDBReadConnection(rs, stmt, db);
+        }
+        
+       return agentDTO; 
+        
+    }
+    
+    public void updateAgentAfterValidation(AgentDTO agentDTO) throws Exception {
+        DBConnection db = null;
+        PreparedStatement stmt = null;
+        Savepoint transactionBegin = null;
+        ResultSet rs = null;
+        boolean output = false;
+        
+        int index = 0;
+        
+        Timestamp createdTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
+        String insertQuery = "INSERT INTO agent (parentId, userId, name, password, mobileNo, "
+                + "address, pin, active, created, createdBy, type, ringId, coinCommission, "
+                + "goldCommission) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        try {
+            db = DBConnector.getInstance().makeReadConnection();
+            db.connection.setAutoCommit(false);
+            
+            transactionBegin = db.connection.setSavepoint("TransactionBegin");
+            
+            stmt = db.connection.prepareStatement(insertQuery);
+            stmt.setInt(++index, agentDTO.getParentId());
+            stmt.setString(++index, agentDTO.getAgentUserId());
+            stmt.setString(++index, agentDTO.getName());
+            stmt.setString(++index, agentDTO.getPassword());
+            stmt.setString(++index, agentDTO.getMobileNo());
+            stmt.setString(++index, agentDTO.getAddress());
+            stmt.setString(++index, agentDTO.getPin());
+            stmt.setBoolean(++index, true);
+            stmt.setTimestamp(++index, createdTime);
+            stmt.setInt(++index, 1);
+            stmt.setInt(++index, agentDTO.getType());
+            stmt.setLong(++index, agentDTO.getRingId());
+            stmt.setLong(++index, agentDTO.getCoinCommission());
+            stmt.setLong(++index, agentDTO.getGoldCommission());
+            stmt.executeUpdate();
+            db.connection.commit();
+            output = true;
+        } catch (Exception e) {
+            rollBackDBTransaction(db, transactionBegin);
+            throw e;
+        } finally {
+            closeDBWriteConnection(rs,stmt, db);
+        }
+     
+    } 
 }

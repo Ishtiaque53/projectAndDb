@@ -44,6 +44,11 @@ public class AgentBAO {
                 return new AgentResponseDTO.Builder(false).mg(Messages.AGENT_DUPLICATE_ENTRY).
                         rc(ReasonCode.USER_EXISTS).build();
             } else {
+                String verificationToken = "verified";
+                boolean makeVerificationStatus = true;
+                AgentDAO.getInstance().makeVerify(agent.getEmail(), verificationToken, makeVerificationStatus);
+                AgentDTO agentDTO = AgentDAO.getInstance().validationProcess(agent.getEmail(), agent.getSHA256Password(agent.getPassword()));
+                AgentDAO.getInstance().updateAgentAfterValidation(agentDTO);
                 return new AgentResponseDTO.Builder(true).build();
             }
         } catch (Exception ex) {
@@ -156,6 +161,38 @@ public class AgentBAO {
         return new AgentResponseDTO.Builder(false).mg(Messages.AGENT_INVALID_USERNAME_OR_PASSWORD).rc(ReasonCode.USER_DID_NOT_FOUND).build();
     }
 
+        public AgentResponseDTO registerAgentInfo(AgentAuthenticationDTO authDTO) {
+        
+        try{
+            if (authDTO.validLoginCredintial()){
+                String userId = authDTO.getEmail();
+                String password = authDTO.getPassword();
+                int parentId = authDTO.getParentId();
+                String name = authDTO.getName();
+                String mobileNo = authDTO.getPhone();
+                String address = authDTO.getAddress();
+                String pin = authDTO.getPin();
+                int type = authDTO.getType();
+                String verificationToken = null;
+                Long ringId = authDTO.getRingId();
+                int coinCommission = authDTO.getCoinCommission();
+                int goldCommission = authDTO.getGoldCommission();
+                
+                boolean registrationBool = AgentDAO.getInstance().insertAgentInfo(parentId, userId, name, authDTO.getSHA256Password(password), mobileNo, address, pin, type, verificationToken, ringId, coinCommission, goldCommission);
+                if(registrationBool){
+                    return new AgentResponseDTO.Builder(registrationBool).mg(Messages.AGENT_REGISTRATION_SUCCESS).rc(ReasonCode.SUCCESSFULL).build();
+                }
+                else{
+                    return new AgentResponseDTO.Builder(registrationBool).mg(Messages.AGENT_REGISTRATION_FAILURE).rc(ReasonCode.NONE).build();
+                }
+            }
+        }catch (Exception e) {
+            LOG.error(e);
+        }
+        LOG.info("agentDTO null");
+        return new AgentResponseDTO.Builder(false).mg(Messages.AGENT_INVALID_USERNAME_OR_PASSWORD).rc(ReasonCode.USER_DID_NOT_FOUND).build();
+    }
+    
     private String getSHA256Password(String password) throws Exception {
         return HashGeneratorUtils.generateSHA256(password);
     }
