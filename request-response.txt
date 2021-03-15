@@ -74,3 +74,18 @@ Request:
 "email":"ishtiaquerabbi@gmail.com",
 "password":"asdf"
 }
+
+
+request url: http://127.0.0.1:9090/api/agent/student
+Method: POST
+Request:
+{
+"studentId":"1",
+"studentName":"	Ishtiaque",
+"studentVillage":"Khulshi",
+"studentPostOffice":"Khulshi",
+"studentThana":"Khulshi",
+"studentZilla":"Chittagong",
+"studentCountry":"Bangladesh"
+}
+
